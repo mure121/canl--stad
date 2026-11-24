@@ -133,6 +133,15 @@ button.pb.dark{background:var(--ink);color:#fff}
 .trow2{display:grid;grid-template-columns:minmax(0,1fr) 52px 52px auto;gap:8px;align-items:center;margin-bottom:8px}
 #cfg .trow2 input[type=color]{width:52px}
 #cfg button.del{min-height:46px;padding:0 12px;border-radius:12px;font-size:14px;font-weight:700;flex-direction:row}
+#promo{left:40px;top:168px;width:1000px;height:246px;padding:22px 32px 20px;display:none;flex-direction:column;gap:8px}
+.promo-on #promo{display:flex}
+.promo-on #tbl{display:none}
+.promo #cfgb{display:none}
+#pk{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:24px;letter-spacing:2px;color:var(--muted)}
+#pt{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:80px;line-height:.95;white-space:nowrap}
+#ps{font-size:26px;font-weight:600;line-height:1.25;color:var(--ink)}
+#pb{margin-top:auto;height:8px;border-radius:4px;background:#ECE6D8;overflow:hidden}
+#pbf{height:8px;border-radius:4px;background:var(--ink);width:0}
 </style>
 </head>
 <body>
@@ -154,6 +163,7 @@ button.pb.dark{background:var(--ink);color:#fff}
   <div class="mic"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg></div>
   <div><small>SPİKER</small><div id="spkt">Maç başlıyor.</div></div>
 </div>
+<div id="promo" class="card" aria-live="polite"><div id="pk"></div><div id="pt"></div><div id="ps"></div><div id="pb"><div id="pbf"></div></div></div>
 <div id="tbl" class="card">
   <div class="th"><b class="cf">PUAN DURUMU</b><span id="lgname"></span><span id="tpg"></span></div>
   <div class="tcols"><div class="tcol" id="tc0"></div><div class="tcol" id="tc1"></div></div>
@@ -584,6 +594,7 @@ var tm={c:0.4,s:3,m:8,l:7};
 function rteam(){return R()<0.54?"A":"B"}
 function crowd(dt){
   if(!CFG.demo||liveOn()||phase==="idle"||phase==="full"||phase==="champ")return;
+  if(PROMO){tm.s=tm.m=tm.l=99}
   tm.c-=dt;if(tm.c<=0){tm.c=rnd(0.5,1.5);comment(rteam())}
   tm.s-=dt;if(tm.s<=0){tm.s=rnd(3,7);small(rteam(),pick(NM))}
   tm.m-=dt;if(tm.m<=0){tm.m=rnd(15,26);medium(rteam(),pick(NM))}
@@ -963,7 +974,7 @@ function figure(p,x,y,S,now,hold,cele){
 var last={};
 function setT(id,v){if(last[id]!==v){last[id]=v;$(id).textContent=v}}
 function hud(){
-  sfxAmb();renderTable();if(panelOpen())mstat();
+  sfxAmb();if(PROMO)promoTick();else renderTable();if(panelOpen())mstat();
   setT("sc",score.A+" : "+score.B);
   setT("minute",phase==="idle"?"MAÇ BEKLENİYOR":phase==="champ"?"SEZON SONU":phase==="pre"?"BAŞLAMAYA "+Math.floor(Math.max(0,phaseT)/60)+":"+("0"+Math.floor(Math.max(0,phaseT)%60)).slice(-2):phase==="full"?"MAÇ BİTTİ":Math.min(90,Math.floor(clock/CFG.matchSec*90)+1)+". DK · "+mmss(CFG.matchSec-clock)+" KALDI");
   setT("fanA",fanCount("A")+" taraftar · şans %"+Math.round(chance("A")*100));setT("fanB",fanCount("B")+" taraftar · şans %"+Math.round(chance("B")*100));
@@ -999,7 +1010,7 @@ function applyCfg(){
     if(sm[t]>=CFG.small)sm[t]=CFG.small-1;if(med[t]>=CFG.medium)med[t]=CFG.medium-1;
   });
 }
-function saveCfg(){try{localStorage.setItem(KEY,JSON.stringify(CFG))}catch(e){}}
+function saveCfg(){if(PROMO)return;try{localStorage.setItem(KEY,JSON.stringify(CFG))}catch(e){}}
 var FIELDS=["small","medium","matchSec","preSec","chanceEmpty","chanceFull","foul","corner","tac","demo","sfx","tts","vol","live","wsUrl","midCoin","bigCoin"];
 function fillForm(){FIELDS.forEach(function(k){var el=$("f_"+k);if(typeof DEF[k]==="boolean")el.checked=CFG[k];else el.value=CFG[k]})}
 FIELDS.forEach(function(k){
@@ -1038,6 +1049,7 @@ function clear(e){while(e.firstChild)e.removeChild(e.firstChild)}
 function signed(n){return (n>0?"+":"")+n}
 function finishMatch(){
   var a=score.A,b=score.B,txt="Maç bitti! "+TN.A+" "+a+", "+TN.B+" "+b+". ";
+  if(PROMO){cur=null;return txt+"Gerçeği çok yakında bu hesapta!"}
   var A=cur&&tById(cur.a),B=cur&&tById(cur.b);cur=null;
   if(!A||!B){renderTable(true);return txt}
   A.O++;B.O++;A.AG+=a;A.YG+=b;B.AG+=b;B.YG+=a;
@@ -1240,6 +1252,42 @@ function wsConnect(){
 $("f_live").addEventListener("change",wsConnect);
 $("f_wsUrl").addEventListener("change",wsConnect);
 
+/* ---------- promo loop (#tanitim): 3 minute self-running showcase ---------- */
+var PROMO=location.hash==="#tanitim",PT0=0,PCYC=-1,PSEG=-1,PF={};
+var PAIRS=[["Galatasaray","Fenerbahçe"],["Beşiktaş","Trabzonspor"],["Kocaelispor","Göztepe"],["Samsunspor","Başakşehir"]];
+var SEG=[[0,12,"ÇOK YAKINDA","CANLI STAD","Yorumla ve hediyeyle oynanan canlı maç. Sahada sen varsın."],
+ [12,40,"NASIL OYNANIR · 1","Yoruma A ya da B yaz","Adınla takımının tribününe otur. Tribün doldukça gol şansı artar."],
+ [40,68,"NASIL OYNANIR · 2","Küçük hediye takıma güç","Takımın hızlanır. 20 küçük hediye gelince gol garanti."],
+ [68,96,"NASIL OYNANIR · 3","3 orta hediye = gol","Üçüncüsü geldiği an takımın kaleye yüklenir ve atar."],
+ [96,130,"NASIL OYNANIR · 4","Büyük hediye: sahaya çık","Formayı kap, takımının golünü sen at. Adın dev ekranda."],
+ [130,160,null],
+ [160,180,"ÇOK YAKINDA","Takımını şimdiden seç","Yoruma takımını yaz, takip et, açılış maçını kaçırma."]];
+function tByName(n){for(var i=0;i<LG.teams.length;i++)if(LG.teams[i].name===n)return LG.teams[i];return null}
+function pfire(k,at,t,fn){if(t>=at&&!PF[k]){PF[k]=1;fn()}}
+function promoTick(){
+  var T=(performance.now()-PT0)/1000,cyc=Math.floor(T/180),t=T%180,i,s;
+  if(cyc!==PCYC){PCYC=cyc;PF={};PSEG=-1;var pr=PAIRS[cyc%PAIRS.length],A=tByName(pr[0])||LG.teams[0],B=tByName(pr[1])||LG.teams[1];startMatch(A,B);if(A===B)startMatch(LG.teams[0],LG.teams[1])}
+  for(i=0;i<SEG.length;i++)if(t>=SEG[i][0]&&t<SEG[i][1])break;
+  s=SEG[i]||SEG[0];
+  if(i!==PSEG){PSEG=i;
+    var on=!!s[2],cl=document.body.classList;if(cl){cl[on?"add":"remove"]("promo-on")}
+    if(on){$("pk").textContent=s[2];$("pt").textContent=s[3];$("ps").textContent=s[4];var pe=$("pt"),fs=80;pe.style.fontSize=fs+"px";while(pe.scrollWidth>pe.clientWidth&&fs>40){fs-=4;pe.style.fontSize=fs+"px"}}else renderTable(true);
+  }
+  $("pbf").style.width=Math.round(100*(t-s[0])/(s[1]-s[0]))+"%";
+  if(phase!=="play")return;
+  var nm=["ahmet.kc","zeyno","kaan07","selin.g","burak_izm","elif41","tuna.gbz","derya_g","onur_dc","melis"];
+  [42,47,52,57].forEach(function(at,k){pfire("s"+k,at,t,function(){for(var j=0;j<6;j++)small("A",nm[(k*6+j)%nm.length])})});
+  [74,79,84].forEach(function(at,k){pfire("m"+k,at,t,function(){medium("B",nm[(k+3)%nm.length])})});
+  pfire("l",100,t,function(){large("A","mert_41")});
+  pfire("lg",106,t,function(){pend.A++});
+}
+function promoStart(){
+  CFG.preSec=0;CFG.matchSec=170;CFG.demo=true;CFG.live=false;
+  var cl=document.body.classList;if(cl)cl.add("promo");
+  PT0=performance.now();promoTick();
+}
+window.addEventListener("hashchange",function(){location.reload()});
+
 /* ---------- loop ---------- */
 var prev=0;
 function frame(now){
@@ -1247,7 +1295,8 @@ function frame(now){
   try{step(dt);draw(now);hud()}catch(e){spkt.textContent="Hata: "+e.message}
   requestAnimationFrame(frame);
 }
-phase="idle";setVisualTeams(LG.teams[0],LG.teams[1]);renderTable(true);say("Sıradaki maç birazdan başlıyor.",false);openCfg(true);if(CFG.live)wsConnect();
+phase="idle";setVisualTeams(LG.teams[0],LG.teams[1]);renderTable(true);
+if(PROMO)promoStart();else{say("Sıradaki maç birazdan başlıyor.",false);openCfg(true);if(CFG.live)wsConnect();}
 requestAnimationFrame(frame);
 })();
 </script>

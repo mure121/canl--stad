@@ -481,7 +481,7 @@ function sfxOoh(){if(playBuf("ooh",0.45))return;burst(700,0.7,0.4,0.15,1.2)}
 function sfxGift(k){var n=[880,1175,1568],i;for(i=0;i<k;i++)tone(n[i],n[i],0.22,0.14,"triangle",i*0.09)}
 /* ---------- commentator: pre-recorded clips (ElevenLabs) ---------- */
 var SPK={},SPK_LOADED=false,spkCur=[],spkPrio=0,spkUntil=0,spkLastCal=0;
-var SPK_LIST='on_01 on_02 on_03 on_04 bas_01 gol_01 gol_02 gol_03 kac_01 kac_02 kac_03 kafa_01 faul_01 pen_01 kor_01 kos_01 cal_01 hed_01 hed_02 hed_03 dev_01 son_01 bit_01 bit_02 tak_galatasaray tak_fenerbahce tak_besiktas tak_trabzonspor tak_basaksehir tak_kasimpasa tak_eyupspor tak_genclerbirligi tak_goztepe tak_konyaspor tak_alanyaspor tak_kocaelispor tak_samsunspor tak_gaziantepfk tak_rizespor tak_erzurumspor tak_amedspor tak_corumfk'.split(" ");
+var SPK_LIST='on_01 on_02 on_03 on_04 bas_01 gol_01 gol_02 gol_03 kac_01 kac_02 kac_03 kafa_01 faul_01 pen_01 kor_01 kos_01 cal_01 hed_01 hed_02 hed_03 dev_01 son_01 bit_01 bit_02 tak_galatasaray tak_fenerbahce tak_besiktas tak_trabzonspor tak_basaksehir tak_kasimpasa tak_eyupspor tak_genclerbirligi tak_goztepe tak_konyaspor tak_alanyaspor tak_kocaelispor tak_samsunspor tak_gaziantepfk tak_rizespor tak_erzurumspor tak_amedspor tak_corumfk p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 p12 p13 p14 vs_01 m01 m02 m03 m04 m05 m06 m07 m08 m09 m10 m11 m12 m13 m14 m15 m16'.split(" ");
 function loadSpk(){
   if(SPK_LOADED||!AU)return;SPK_LOADED=true;
   SPK_LIST.forEach(function(k){
@@ -551,9 +551,35 @@ var PRE=[
 ];
 function durTxt(s){var m=Math.floor(s/60),r=s%60;return m&&r?m+" dakika "+r+" saniye":m?m+" dakika":r+" saniye"}
 function mmss(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
+var PREPL=[],preNi=0,cdDone=false,spkLastFill="";
+var PREREM=[["p04"],["p05"],["p06"],["p07"],["p08"],["p10"],["p13"],["p14"]];
+function prePlaylist(){
+  var a="tak_"+tslug(TN.A),b="tak_"+tslug(TN.B),dv=(SPK[a]&&SPK[b])?["p02",a,"vs_01",b]:["p02"];
+  return [["p01"],dv,["p03"],["p04"],["p05"],["p06"],["p07"],["p08"],["p09"],["p10"],["p13"],["p14"],["p11"]];
+}
+function clipDur(item){var s=0;item.forEach(function(k){if(SPK[k])s+=SPK[k].duration+0.06});return s}
+function preNarrate(){
+  if(!AU||!soundOn||!CFG.spk)return;
+  var cd=SPK.p12?SPK.p12.duration+0.35:6;
+  if(!cdDone&&phaseT<=cd){cdDone=true;spkUntil=0;spk("p12",5);return}
+  if(cdDone||spkBusy()||phaseT<=cd+1)return;
+  if(!PREPL.length)PREPL=prePlaylist();
+  for(var guard=0;guard<PREPL.length+PREREM.length;guard++){
+    var item=preNi<PREPL.length?PREPL[preNi]:PREREM[(preNi-PREPL.length)%PREREM.length];preNi++;
+    var d=clipDur(item);if(d>0&&d<phaseT-cd-0.3){spk(item,1);return}
+  }
+}
+var FILL_NEAR=["m03","m07","m08","m10"],FILL_MID=["m01","m02","m06","m09"],FILL_ANY=["m04","m05"],CTA=["m11","m12","m13","m14","m15","m16"];
+function matchNarrate(){
+  if(!AU||!soundOn||!CFG.spk||phase!=="play")return;
+  if(AU.currentTime-spkUntil<3)return;
+  var pool,near=Math.min(ball.u,1-ball.u)<0.25;
+  if(R()<0.35)pool=CTA;else pool=(near?FILL_NEAR:Math.abs(ball.u-0.5)<0.2?FILL_MID:FILL_ANY).concat(FILL_ANY);
+  var k=pick(pool);if(k===spkLastFill)k=pick(pool);spkLastFill=k;spk(k,0);
+}
 function preLeft(){var s=Math.max(0,Math.round(phaseT));return s>=60?Math.round(s/60)+" dakika":s+" saniye"}
 function startPre(){
-  phase="pre";phaseT=CFG.preSec;preI=0;clock=0;
+  phase="pre";phaseT=CFG.preSec;preI=0;clock=0;PREPL=[];preNi=0;cdDone=false;
   kickoff(R()<0.5?"A":"B");
 }
 function filler(){
@@ -602,7 +628,7 @@ function sureGoal(t){
   run={p:p,t:0,on:false,beat:[],j:0};
 }
 function large(t,name){
-  sfxGift(3);spk("hed_01",2);addPower(t,30);
+  sfxGift(3);spk("hed_01",1);addPower(t,30);
   players.forEach(function(q){if(q.owner===name){q.owner=null;q.sup=false;if(run&&run.p===q&&!run.on)run=null}});
   var fw=[],bots=[],own=[],i,p;
   for(i=0;i<players.length;i++){p=players[i];if(p.team!==t||p.gk)continue;if(!p.owner){bots.push(p);if(p.num>=10)fw.push(p)}else if(queue[t].indexOf(p)<0)own.push(p)}
@@ -752,7 +778,8 @@ function step(dt){
   if(phase==="pre"){
     phaseT-=dt;
     var fr=CFG.preSec>0?phaseT/CFG.preSec:0;
-    if(preI<PRE.length&&fr<=PRE[preI][0]){say(PRE[preI][1](),true);spk(["on_01","on_02","on_03",null,null,null,"on_04"][preI],1);preI++}
+    if(preI<PRE.length&&fr<=PRE[preI][0]){say(PRE[preI][1](),true);preI++}
+    preNarrate();
     players.forEach(function(q){q.mv=false});
     if(phaseT<=0){phase="play";sfxWhistle(0.7);spk("bas_01",2);say("Ve hakemin düdüğüyle maç başladı! "+TN[ball.team]+" santrayı yapıyor.",true)}
     return;
@@ -769,6 +796,7 @@ function step(dt){
   }
   clock+=dt;
   lastSay+=dt;
+  matchNarrate();
   var mn=clock/CFG.matchSec*90;
   if(!mark45&&mn>=45){mark45=true;spk("dev_01",1);say("İlk 45 dakika geride kaldı. Skor: "+TN.A+" "+score.A+", "+TN.B+" "+score.B+". Bitime "+durTxt(Math.round(CFG.matchSec-clock))+" var.",true)}
   else if(!mark80&&mn>=80){mark80=true;spk("son_01",1);say("Maçın son 10 dakikasına giriyoruz, bitime "+durTxt(Math.round(CFG.matchSec-clock))+" kaldı. "+(score.A===score.B?"Skor dengede, bir gol her şeyi değiştirir.":(score.A>score.B?TN.B:TN.A)+" için zaman daralıyor."),true)}

@@ -108,6 +108,13 @@ button.pb.dark{background:var(--ink);color:#fff}
 .tr .p{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:24px}
 .tr.hd .p{font-family:inherit;font-size:15px;font-weight:700}
 .sw{width:20px;height:20px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(28,35,48,.25);display:block}
+#tg{position:absolute;left:40px;top:1786px;width:1000px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.tgp{height:104px;border-radius:26px;display:flex;align-items:center;gap:16px;padding:0 22px;box-shadow:0 0 0 4px #fff,0 6px 0 rgba(28,35,48,.15);animation:tgp 1.6s ease-in-out infinite}
+#tgB{animation-delay:.8s}
+@keyframes tgp{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+.tgp b{display:block;overflow:hidden;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:44px;line-height:1;white-space:nowrap}
+.tgp span{display:block;font-size:22px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}
+.tgp div{min-width:0;flex:1;overflow:hidden}
 #gs{position:absolute;left:40px;top:1612px;width:1000px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 #gs .card{position:relative;padding:12px 16px;display:flex;flex-direction:column;gap:6px}
 .gsh{display:flex;align-items:center;gap:10px;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:28px;line-height:1;height:28px}
@@ -172,6 +179,7 @@ button.pb.dark{background:var(--ink);color:#fff}
   <div class="th"><b class="cf">PUAN DURUMU</b><span id="lgname"></span><span id="tpg"></span></div>
   <div class="tcols"><div class="tcol" id="tc0"></div><div class="tcol" id="tc1"></div></div>
 </div>
+<div id="tg"><div class="tgp" id="tgA"><svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><div><b id="tgAb">GÜL AT</b><span id="tgAs"></span></div></div><div class="tgp" id="tgB"><svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><div><b id="tgBb">SENİ SEVİYORUM AT</b><span id="tgBs"></span></div></div></div>
 <div id="gs">
   <div class="card"><div class="gsh"><i id="giA"></i><span id="ghA">A · İZMİT</span></div>
     <div class="gsr"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1C2330" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span class="gk">KÜÇÜK</span><span>gole</span><b id="smA">0/20</b></div>
@@ -209,6 +217,9 @@ button.pb.dark{background:var(--ink);color:#fff}
     <label>Bağlantı adresi<input type="text" id="f_wsUrl" spellcheck="false" autocomplete="off"></label>
     <p class="stat" id="wsst" aria-live="polite">Durum: kapalı</p>
     <div class="grow" style="margin-top:8px"><label>Orta hediye en az (jeton)<input type="number" id="f_midCoin" min="1" max="100000" inputmode="numeric"></label><label>Büyük hediye en az (jeton)<input type="number" id="f_bigCoin" min="1" max="100000" inputmode="numeric"></label></div>
+    <div class="grow" style="margin-top:8px"><label>A takımının hediyesi<input type="text" id="f_giftA" spellcheck="false"></label><label>B takımının hediyesi<input type="text" id="f_giftB" spellcheck="false"></label></div>
+    <p class="note">Yazım: ekranda görünecek ad | TikTok'un gönderdiği ad. Bu hediyeler kim atarsa atsın doğrudan o takıma gider.</p>
+    <p class="stat" id="lastgift">Son gelen hediye: henüz yok</p>
     <p class="note">Yoruma A ya da B yazan o takımın tribününe adıyla oturur. Hediye, gönderenin seçtiği takıma gider; hiç yazmamışsa taraftarı az olan takıma katılır.</p>
     <h2>Deneme</h2>
     <label class="chk"><input type="checkbox" id="f_demo"><span>Sahte seyirci açık (kapatınca yalnızca aşağıdaki düğmeler çalışır)</span></label>
@@ -265,7 +276,7 @@ button.pb.dark{background:var(--ink);color:#fff}
 (function(){
 "use strict";
 var INK="#1C2330",BLUE="#1D4ED8",ORANGE="#F08A24";
-var DEF={nameA:"İzmit",nameB:"Gebze",a1:"#1D4ED8",a2:"#FFFFFF",b1:"#F08A24",b2:"#1C2330",small:20,medium:3,matchSec:150,chanceEmpty:2,chanceFull:22,foul:5,corner:42,tac:30,demo:true,preSec:60,live:false,wsUrl:"ws://localhost:21213/",midCoin:10,bigCoin:100,sfx:true,spk:true,tts:false,vol:70};
+var DEF={nameA:"İzmit",nameB:"Gebze",a1:"#1D4ED8",a2:"#FFFFFF",b1:"#F08A24",b2:"#1C2330",small:20,medium:3,matchSec:150,chanceEmpty:2,chanceFull:22,foul:5,corner:42,tac:30,demo:true,preSec:60,live:false,wsUrl:"ws://localhost:21213/",midCoin:10,bigCoin:100,giftA:"Gül|Rose",giftB:"Seni seviyorum|I Love You|I love you",sfx:true,spk:true,tts:false,vol:70};
 var CFG={},KEY="canli-stad-ayar";
 (function(){var k,s=null;try{s=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}for(k in DEF)CFG[k]=(s&&typeof s[k]===typeof DEF[k])?s[k]:DEF[k]})();
 function hex(c){var m=/^#?([0-9a-f]{6})$/i.exec(c||"");if(!m)return [128,128,128];var n=parseInt(m[1],16);return [n>>16,(n>>8)&255,n&255]}
@@ -277,6 +288,7 @@ function spoken(n){var m=/([A-ZÇĞİÖŞÜ]{2,})$/.exec(n);if(m){var l=m[1].sli
 function lastV(n){n=spoken(n).toLocaleLowerCase("tr");for(var i=n.length-1;i>=0;i--){if((VB+VF).indexOf(n[i])>=0)return n[i]}return "e"}
 function endsV(n){n=spoken(n).toLocaleLowerCase("tr");return (VB+VF).indexOf(n[n.length-1])>=0}
 function dat(n){var v=lastV(n);return n+"'"+(endsV(n)?"y":"")+(VB.indexOf(v)>=0?"a":"e")}
+function acc(n){var v=lastV(n),s=(v==="a"||v==="ı")?"ı":(v==="e"||v==="i")?"i":(v==="o"||v==="u")?"u":"ü";return n+"'"+(endsV(n)?"y":"")+s}
 function gen(n){var v=lastV(n),s=(v==="a"||v==="ı")?"ın":(v==="e"||v==="i")?"in":(v==="o"||v==="u")?"un":"ün";return n+"'"+(endsV(n)?"n":"")+s}
 function up(n){return n.toLocaleUpperCase("tr")}
 var SH={A:["#1D4ED8","#2B5BE0","#163FB0"],B:["#F08A24","#F5A04A","#F7B267"]};
@@ -1085,13 +1097,16 @@ function applyCfg(){
     $("gh"+t).textContent=t+" · "+up(TN[t]);
     $("gi"+t).style.background="linear-gradient(135deg,"+c1+" 50%,"+c2+" 50%)";
     ["ct","sl","ml","ll"].forEach(function(k){$(k+t).textContent=TN[t]});
+    var gl=String(t==="A"?CFG.giftA:CFG.giftB).split("|")[0].trim()||"Hediye";
+    var be=$("tg"+t+"b"),fs=44;be.textContent=up(gl)+" AT";be.style.fontSize=fs+"px";while(be.scrollWidth>be.clientWidth&&fs>24){fs-=2;be.style.fontSize=fs+"px"}$("tg"+t+"s").textContent=acc(TN[t])+" destekle";
+    $("tg"+t).style.background=c1;$("tg"+t).style.color=ON[t];
     var pp=$("pip"+t);
     if(pp.children.length!==CFG.medium&&pp.appendChild){while(pp.firstChild)pp.removeChild(pp.firstChild);for(var i=0;i<CFG.medium;i++)pp.appendChild(document.createElement("u"))}
     if(sm[t]>=CFG.small)sm[t]=CFG.small-1;if(med[t]>=CFG.medium)med[t]=CFG.medium-1;
   });
 }
 function saveCfg(){if(PROMO)return;try{localStorage.setItem(KEY,JSON.stringify(CFG))}catch(e){}}
-var FIELDS=["small","medium","matchSec","preSec","chanceEmpty","chanceFull","foul","corner","tac","demo","sfx","spk","tts","vol","live","wsUrl","midCoin","bigCoin"];
+var FIELDS=["small","medium","matchSec","preSec","chanceEmpty","chanceFull","foul","corner","tac","demo","sfx","spk","tts","vol","live","wsUrl","midCoin","bigCoin","giftA","giftB"];
 function fillForm(){FIELDS.forEach(function(k){var el=$("f_"+k);if(typeof DEF[k]==="boolean")el.checked=CFG[k];else el.value=CFG[k]})}
 FIELDS.forEach(function(k){
   var el=$("f_"+k);
@@ -1293,6 +1308,11 @@ function seatViewer(t,id,nm){
   var pool=near.length?near:free;if(!pool.length)return;
   s=pick(pool);sit(s,false,initials(nm));SEAT[id]=s;
 }
+function giftTeam(name,id){
+  var n=String(name).toLocaleLowerCase("tr"),r=null;
+  ["A","B"].forEach(function(t){String(t==="A"?CFG.giftA:CFG.giftB).split("|").forEach(function(p){p=p.trim().toLocaleLowerCase("tr");if(p&&(p===n||p===String(id)))r=r||t})});
+  return r;
+}
 function onLive(raw){
   var m;try{m=JSON.parse(raw)}catch(e){return}
   var ev=m.event||m.type,d=m.data||m;if(!ev||!d)return;
@@ -1311,8 +1331,11 @@ function onLive(raw){
     var cnt=Math.max(1,Math.min(200,+(d.repeatCount!=null?d.repeatCount:g.repeat_count)||1));
     var dia=+(d.diamondCount!=null?d.diamondCount:((d.extendedGiftInfo&&d.extendedGiftInfo.diamond_count)||g.diamond_count))||1;
     if(phase==="full"){say(nm+", hediyen için teşekkürler! Bir sonraki maçta yine bekleriz.",false);return}
-    var tm=FAN[id];
-    if(!tm){tm=fanCount("A")<=fanCount("B")?"A":"B";FAN[id]=tm;say(nm+" "+TE[tm]+" katıldı.",false)}
+    var gname=String(d.giftName||(d.extendedGiftInfo&&d.extendedGiftInfo.name)||g.name||"").trim(),gid=String(d.giftId!=null?d.giftId:(g.gift_id||""));
+    try{$("lastgift").textContent="Son gelen hediye: "+(gname||"?")+" (id "+gid+", "+dia+" jeton)"}catch(x){}
+    var tm=giftTeam(gname,gid);
+    if(tm){if(FAN[id]!==tm){FAN[id]=tm;say(nm+" "+TE[tm]+" destek verdi!",false)}}
+    else{tm=FAN[id];if(!tm){tm=fanCount("A")<=fanCount("B")?"A":"B";FAN[id]=tm;say(nm+" "+TE[tm]+" katıldı.",false)}}
     seatViewer(tm,id,nm);
     var tier=dia>=CFG.bigCoin?"l":dia>=CFG.midCoin?"m":"s";
     for(var i=0;i<cnt;i++){if(tier==="l")large(tm,nm);else if(tier==="m")medium(tm,nm);else small(tm,nm)}

@@ -1308,7 +1308,7 @@ function wsConnect(){
   wsSet("bağlanıyor…");
   WS.onopen=function(){wsSet("bağlı, canlı yayın verisi geliyor");say("Canlı yayın bağlantısı kuruldu.",false)};
   WS.onmessage=function(e){try{var m=JSON.parse(e.data);if(m&&(m.error||m.event==="error"||m.type==="error"))wsSet("sunucu cevabı: "+String(m.message||m.error||(m.data&&m.data.message)||e.data).slice(0,140));}catch(x){}try{onLive(e.data)}catch(x){}};
-  WS.onclose=function(e){WS=null;var why=(e&&e.code?"kod "+e.code:"")+(e&&e.reason?" · "+e.reason:"");if(CFG.live){wsSet("bağlantı yok"+(why?" ("+why+")":"")+". 5 saniye sonra yeniden denenecek.");wsTimer=setTimeout(wsConnect,5000)}};
+  WS.onclose=function(e){WS=null;var why=(e&&e.code?"kod "+e.code:"")+(e&&e.reason?" · "+e.reason:"");if(CFG.live){if(e&&e.code===4404){wsSet("yayın kapalı görünüyor. Canlıya çıkınca kendiliğinden bağlanacak.");wsTimer=setTimeout(wsConnect,15000)}else{wsSet("bağlantı yok"+(why?" ("+why+")":"")+". 10 saniye sonra yeniden denenecek.");wsTimer=setTimeout(wsConnect,10000)}}};
   WS.onerror=function(){};
 }
 $("f_live").addEventListener("change",wsConnect);

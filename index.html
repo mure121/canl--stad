@@ -1307,8 +1307,8 @@ function wsConnect(){
   try{WS=new WebSocket(CFG.wsUrl)}catch(e){wsSet("adres hatalı");return}
   wsSet("bağlanıyor…");
   WS.onopen=function(){wsSet("bağlı, canlı yayın verisi geliyor");say("Canlı yayın bağlantısı kuruldu.",false)};
-  WS.onmessage=function(e){try{onLive(e.data)}catch(x){}};
-  WS.onclose=function(){WS=null;if(CFG.live){wsSet("bağlantı yok, 5 saniye sonra yeniden denenecek. TikFinity açık mı?");wsTimer=setTimeout(wsConnect,5000)}};
+  WS.onmessage=function(e){try{var m=JSON.parse(e.data);if(m&&(m.error||m.event==="error"||m.type==="error"))wsSet("sunucu cevabı: "+String(m.message||m.error||(m.data&&m.data.message)||e.data).slice(0,140));}catch(x){}try{onLive(e.data)}catch(x){}};
+  WS.onclose=function(e){WS=null;var why=(e&&e.code?"kod "+e.code:"")+(e&&e.reason?" · "+e.reason:"");if(CFG.live){wsSet("bağlantı yok"+(why?" ("+why+")":"")+". 5 saniye sonra yeniden denenecek.");wsTimer=setTimeout(wsConnect,5000)}};
   WS.onerror=function(){};
 }
 $("f_live").addEventListener("change",wsConnect);

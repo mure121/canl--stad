@@ -1308,7 +1308,8 @@ function wsConnect(){
   clearTimeout(wsTimer);
   try{if(WS){WS.onclose=null;WS.close()}}catch(e){}WS=null;
   if(!CFG.live){wsSet("kapalı");return}
-  try{WS=new WebSocket(CFG.wsUrl)}catch(e){wsSet("adres hatalı");return}
+  var url=String(CFG.wsUrl||"").replace(/\s+/g,"").replace(/^(https?|wss?):\/\/(api\.)?tik\.tools\/?/i,"wss://api.tik.tools");
+  try{WS=new WebSocket(url)}catch(e){wsSet("adres hatalı");return}
   wsSet("bağlanıyor…");
   WS.onopen=function(){wsSet("bağlı, canlı yayın verisi geliyor");say("Canlı yayın bağlantısı kuruldu.",false)};
   WS.onmessage=function(e){try{var m=JSON.parse(e.data);if(m&&(m.error||m.event==="error"||m.type==="error"))wsSet("sunucu cevabı: "+String(m.message||m.error||(m.data&&m.data.message)||e.data).slice(0,140));}catch(x){}try{onLive(e.data)}catch(x){}};

@@ -240,6 +240,7 @@ button.pb.dark{background:var(--ink);color:#fff}
     <h2>Ses ayarları</h2>
     <label class="chk"><input type="checkbox" id="f_sfx"><span>Maç sesleri (gol, düdük, vuruş, hediye)</span></label>
     <label class="chk"><input type="checkbox" id="f_spk"><span>Spiker (gerçek ses kayıtları)</span></label>
+    <div class="selrow" style="margin:6px 0 8px;align-items:center"><button class="pb" id="spktest">Spikeri dene</button><p class="stat" id="spkst" style="margin:0">Spiker: ses kapalı</p></div>
     <label class="chk"><input type="checkbox" id="f_tts"><span>Cihazın robot sesiyle spiker (önerilmez)</span></label>
     <div class="grow" style="margin-top:8px"><label>Ses düzeyi (0-100)<input type="number" id="f_vol" min="0" max="100" inputmode="numeric"></label></div>
     <h2>Gerçek ses dosyaları</h2>
@@ -484,10 +485,13 @@ var SPK_LIST='on_01 on_02 on_03 on_04 bas_01 gol_01 gol_02 gol_03 kac_01 kac_02 
 function loadSpk(){
   if(SPK_LOADED||!AU)return;SPK_LOADED=true;
   SPK_LIST.forEach(function(k){
-    try{fetch("sounds/spk/"+k+".mp3").then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()}).then(function(ab){AU.decodeAudioData(ab,function(b){SPK[k]=b},function(){})}).catch(function(){})}catch(e){}
+    try{fetch("sounds/spk/"+k+".mp3").then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()}).then(function(ab){AU.decodeAudioData(ab,function(b){SPK[k]=b;spkStat()},function(){spkFail++;spkStat()})}).catch(function(){spkFail++;spkStat()})}catch(e){}
   });
 }
 function tslug(n){n=String(n).toLocaleLowerCase("tr");var m={"ç":"c","ğ":"g","ı":"i","ö":"o","ş":"s","ü":"u","i̇":"i"};return n.replace(/[çğıöşü]/g,function(c){return m[c]}).replace(/[^a-z0-9]/g,"")}
+var spkFail=0;
+function spkStat(){var e=$("spkst");if(!e)return;var n=Object.keys(SPK).length;
+  e.textContent=!soundOn?"Spiker: önce sesi aç":!AU?"Spiker: bu tarayıcıda ses motoru yok":"Spiker: "+n+"/"+SPK_LIST.length+" klip hazır"+(spkFail?" · "+spkFail+" klip yüklenemedi":"")+(AU.state!=="running"?" · ses bekliyor":"")}
 function spkBusy(){return !!(AU&&AU.currentTime<spkUntil)}
 function spk(keys,prio){
   if(!AU||!soundOn||!CFG.spk)return;
@@ -509,6 +513,12 @@ function sfxAmb(){
     CG.gain.setTargetAtTime(on?g:0,AU.currentTime,0.35);RG.gain.setTargetAtTime(on?g*0.6:0,AU.currentTime,0.35);
     CF1.frequency.setTargetAtTime(800+500*fl+(phase==="goal"?500:0),AU.currentTime,0.4);AM.gain.setTargetAtTime(CFG.vol/100,AU.currentTime,0.1)}catch(e){}
 }
+$("spktest").addEventListener("click",function(){
+  if(!soundOn)$("voice").click();
+  try{if(AU&&AU.state!=="running")AU.resume()}catch(e){}
+  loadSpk();spkStat();
+  var tries=0;(function go(){if(SPK.gol_02&&SPK.tak_galatasaray){spkUntil=0;spk(["gol_02","tak_galatasaray"],9)}else if(tries++<20)setTimeout(go,250);else spkStat()})();
+});
 $("voice").addEventListener("click",function(){
   soundOn=!soundOn;
   if(soundOn){
@@ -998,7 +1008,7 @@ function figure(p,x,y,S,now,hold,cele){
 var last={};
 function setT(id,v){if(last[id]!==v){last[id]=v;$(id).textContent=v}}
 function hud(){
-  sfxAmb();if(PROMO)promoTick();else renderTable();if(panelOpen())mstat();
+  sfxAmb();if(panelOpen())spkStat();if(PROMO)promoTick();else renderTable();if(panelOpen())mstat();
   setT("sc",score.A+" : "+score.B);
   setT("minute",phase==="idle"?"MAÇ BEKLENİYOR":phase==="champ"?"SEZON SONU":phase==="pre"?"BAŞLAMAYA "+Math.floor(Math.max(0,phaseT)/60)+":"+("0"+Math.floor(Math.max(0,phaseT)%60)).slice(-2):phase==="full"?"MAÇ BİTTİ":Math.min(90,Math.floor(clock/CFG.matchSec*90)+1)+". DK · "+mmss(CFG.matchSec-clock)+" KALDI");
   setT("fanA",fanCount("A")+" taraftar · şans %"+Math.round(chance("A")*100));setT("fanB",fanCount("B")+" taraftar · şans %"+Math.round(chance("B")*100));
